@@ -47,40 +47,45 @@ class AuthorPredict(nn.Module):
 class AuthorFFNN:
     def __init__(self, lr =0.01):
         self.lr = lr
-    def train(self, inputs, hiddensize, nonlin, samplesize): 
+    def train(self, inputs, hiddensize, nonlin, samplesize, epoch=3): 
         self.model = AuthorPredict((inputs.shape[1]-2)*2, hiddensize, nonlin)
         criterion = nn.BCELoss()
         optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
+        documents = inputs.drop(inputs.columns[[0,1]], axis=1)
+        labels = inputs.iloc[:, 1:2]
 
-        for i in range(samplesize):
-            documents = inputs.drop(inputs.columns[[0,1]], axis=1)
-            labels = inputs.iloc[:, 1:2]
-            in1 = random.randint(0, len(documents))
-            auth = labels.iloc[in1, 0]
-            in_same = labels[labels.iloc[:, 0] == auth].index
-            in_diff = labels[labels.iloc[:, 0] != auth].index
-            coin = random.randint(0, 1)
-            if coin == 0:
-                in2 = random.choice(in_diff)
-            if coin == 1:
-                in2 = random.choice(in_same)
-            docs = documents.to_numpy()
-            doc1 = torch.Tensor(docs[in1])
-            doc2 = torch.Tensor(docs[in2])
-            instance = torch.cat((doc1, doc2), 0)
-            output = self.model(instance)
-            label = torch.Tensor([coin])
-            loss = criterion(output, label)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+        for epoch in range(epoch):
+            for i in range(samplesize):
+ #               documents = inputs.drop(inputs.columns[[0,1]], axis=1)
+#                labels = inputs.iloc[:, 1:2]
+                in1 = random.randint(0, len(documents))
+                auth = labels.iloc[in1, 0]
+                in_same = labels[labels.iloc[:, 0] == auth].index
+                in_diff = labels[labels.iloc[:, 0] != auth].index
+                coin = random.randint(0, 1)
+                if coin == 0:
+                    in2 = random.choice(in_diff)
+                if coin == 1:
+                    in2 = random.choice(in_same)
+                docs = documents.to_numpy()
+                doc1 = torch.Tensor(docs[in1])
+                doc2 = torch.Tensor(docs[in2])
+                instance = torch.cat((doc1, doc2), 0)
+                output = self.model(instance)
+                label = torch.Tensor([coin])
+                loss = criterion(output, label)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
     def test(self, inputs, samplesize):
         pred_list = []
         label_list = []
+        documents = inputs.drop(inputs.columns[[0,1]], axis=1)
+        labels = inputs.iloc[:, 1:2]
         for i in range(samplesize):
-            documents = inputs.drop(inputs.columns[[0,1]], axis=1)
-            labels = inputs.iloc[:, 1:2]
+#            documents = inputs.drop(inputs.columns[[0,1]], axis=1)
+ #           labels = inputs.iloc[:, 1:2]
             in1 = random.randint(0, len(documents))
             auth = labels.iloc[in1, 0]
             in_same = labels[labels.iloc[:, 0] == auth].index
@@ -102,7 +107,6 @@ class AuthorFFNN:
             else:
                 predict = 0
             pred_list.append(predict)
-        print(label_list)
 
         accuracy = accuracy_score(label_list, pred_list)
         f = f1_score(label_list, pred_list, average='weighted')
@@ -114,6 +118,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train and test a model on features.")
     parser.add_argument("featurefile", type=str, help="The file containing the table of instances and features.")
     parser.add_argument("--size", dest="samplesize", default = 150, type = int, help="The number of text pairs used to train the FFNN.")
+    parser.add_argument("--testsize", dest="test_samplesize", default = 50, type = int, help="number of test samples")
     parser.add_argument("--hidden", dest="hiddensize", default = 0, type = int, help = "Size of hidden layer")
     parser.add_argument("--nonlin", dest ="nonlinearity", default = " ", type = str, help = "Set one of two nonlinearities ReLU or Tanh")
     # Add options here for part 3 -- hidden layer and nonlinearity,
@@ -131,7 +136,7 @@ if __name__ == "__main__":
 
     ffnn = AuthorFFNN()
     ffnn.train(train, args.hiddensize, args.nonlinearity, args.samplesize)
-    ffnn.test(test, args.samplesize)
+    ffnn.test(test, args.test_samplesize)
 
     # implement everything you need here
     
