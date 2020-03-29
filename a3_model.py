@@ -8,25 +8,47 @@ from torch import nn
 from torch import optim
 import random
 from sklearn.metrics import f1_score, recall_score, accuracy_score, precision_score
+
 # Whatever other imports you need
 
 # You can implement classes and helper functions here too.
 
 class AuthorPredict(nn.Module):
-    def __init__(self, input_size, output_size=1):
+    def __init__(self, input_size, hiddensize, nonlin, output_size=1):
         super().__init__()
-        self.linear = nn.Linear(input_size, output_size)
+        self.hiddensize = hiddensize
+        nonlinearities = {"ReLU": nn.ReLU(inplace=False), "Tanh": torch.nn.Tanh()}
+        self.nonlin = nonlin
+        if hiddensize > 0:
+            self.linear1 = nn.Linear(input_size, hiddensize)
+            self.linear2 = nn.Linear(hiddensize, output_size)
+        else:
+            self.linear = nn.Linear(input_size, output_size)
+        if nonlin != " ":
+            self.nonlinearity = nonlinearities[nonlin]
+        else:
+            self.nonlinearity = 0
         self.sigmoid = nn.Sigmoid()
+
     def forward(self, x):
-        m = self.linear(x)
-        n = self.sigmoid(m)
-        return n
+        if self.hiddensize > 0:
+            if self.nonlinearity:            
+                m = self.linear1(x)
+                n = self.nonlinearity(m)
+                o = self.linear2(n)
+            else:
+                m = self.linear1(x)
+                o = self.linear2(m)
+        else:
+            o = self.linear(x)
+        z = self.sigmoid(o)
+        return z
 
 class AuthorFFNN:
     def __init__(self, lr =0.01):
         self.lr = lr
-    def train(self, inputs, samplesize): 
-        self.model = AuthorPredict((inputs.shape[1]-2)*2)
+    def train(self, inputs, hiddensize, nonlin, samplesize): 
+        self.model = AuthorPredict((inputs.shape[1]-2)*2, hiddensize, nonlin)
         criterion = nn.BCELoss()
         optimizer = optim.SGD(self.model.parameters(), lr=self.lr)
 
@@ -91,7 +113,9 @@ class AuthorFFNN:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train and test a model on features.")
     parser.add_argument("featurefile", type=str, help="The file containing the table of instances and features.")
-    parser.add_argument("samplesize", type = int, help="The number of text pairs used to train the FFNN.")
+    parser.add_argument("--size", dest="samplesize", default = 150, type = int, help="The number of text pairs used to train the FFNN.")
+    parser.add_argument("--hidden", dest="hiddensize", default = 0, type = int, help = "Size of hidden layer")
+    parser.add_argument("--nonlin", dest ="nonlinearity", default = " ", type = str, help = "Set one of two nonlinearities ReLU or Tanh")
     # Add options here for part 3 -- hidden layer and nonlinearity,
     # and any other options you may think you want/need.  Document
     # everything.
@@ -106,7 +130,7 @@ if __name__ == "__main__":
     test.reset_index(inplace=True, drop=True)
 
     ffnn = AuthorFFNN()
-    ffnn.train(train, args.samplesize)
+    ffnn.train(train, args.hiddensize, args.nonlinearity, args.samplesize)
     ffnn.test(test, args.samplesize)
 
     # implement everything you need here
