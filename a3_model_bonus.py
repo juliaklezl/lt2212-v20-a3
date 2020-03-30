@@ -60,7 +60,7 @@ class AuthorFFNN:
             for i in range(samplesize):
         #        documents = inputs.drop(inputs.columns[[0,1]], axis=1)
          #       labels = inputs.iloc[:, 1:2]
-                in1 = random.randint(0, len(documents))
+                in1 = random.randint(0, len(documents)-1)
                 auth = labels.iloc[in1, 0]
                 in_same = labels[labels.iloc[:, 0] == auth].index
                 in_diff = labels[labels.iloc[:, 0] != auth].index
@@ -86,9 +86,7 @@ class AuthorFFNN:
         documents = inputs.drop(inputs.columns[[0,1]], axis=1)
         labels = inputs.iloc[:, 1:2]
         for i in range(samplesize):
-    #        documents = inputs.drop(inputs.columns[[0,1]], axis=1)
-     #       labels = inputs.iloc[:, 1:2]
-            in1 = random.randint(0, len(documents))
+            in1 = random.randint(0, len(documents)-1)
             auth = labels.iloc[in1, 0]
             in_same = labels[labels.iloc[:, 0] == auth].index
             in_diff = labels[labels.iloc[:, 0] != auth].index
@@ -139,10 +137,10 @@ if __name__ == "__main__":
     test = data[data[0] == "test"]
     test.reset_index(inplace=True, drop=True)
 
-    hiddensize = [10, 50, 100, 500]
+    hiddensize = [0, 10, 50, 70, 100]
+    precision = []
+    recall = []
     for size in hiddensize:
-        precision = []
-        recall = []
         ffnn = AuthorFFNN()
         ffnn.train(train, size, args.nonlinearity, args.samplesize)
         results = ffnn.test(test, args.test_samplesize)
@@ -152,6 +150,6 @@ if __name__ == "__main__":
     prec_rec["precision"] = precision
     prec_rec["recall"] = recall
     df = pd.DataFrame.from_dict(prec_rec)
-    plot1 = df.plot()    
-    plot1.get_figure().savefig('output.png')
-    #plot.savefig('plot.png')
+    df.sort_values("recall")
+    plot1 = df.plot(x="recall", y="precision", kind = "line")    
+    plot1.get_figure().savefig(args.outputfile)

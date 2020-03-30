@@ -9,9 +9,6 @@ from torch import optim
 import random
 from sklearn.metrics import f1_score, recall_score, accuracy_score, precision_score
 
-# Whatever other imports you need
-
-# You can implement classes and helper functions here too.
 
 class AuthorPredict(nn.Module):
     def __init__(self, input_size, hiddensize, nonlin, output_size=1):
@@ -56,9 +53,7 @@ class AuthorFFNN:
 
         for epoch in range(epoch):
             for i in range(samplesize):
- #               documents = inputs.drop(inputs.columns[[0,1]], axis=1)
-#                labels = inputs.iloc[:, 1:2]
-                in1 = random.randint(0, len(documents))
+                in1 = random.randint(0, len(documents)-1)
                 auth = labels.iloc[in1, 0]
                 in_same = labels[labels.iloc[:, 0] == auth].index
                 in_diff = labels[labels.iloc[:, 0] != auth].index
@@ -84,9 +79,7 @@ class AuthorFFNN:
         documents = inputs.drop(inputs.columns[[0,1]], axis=1)
         labels = inputs.iloc[:, 1:2]
         for i in range(samplesize):
-#            documents = inputs.drop(inputs.columns[[0,1]], axis=1)
- #           labels = inputs.iloc[:, 1:2]
-            in1 = random.randint(0, len(documents))
+            in1 = random.randint(0, len(documents)-1)
             auth = labels.iloc[in1, 0]
             in_same = labels[labels.iloc[:, 0] == auth].index
             in_diff = labels[labels.iloc[:, 0] != auth].index
@@ -121,9 +114,6 @@ if __name__ == "__main__":
     parser.add_argument("--testsize", dest="test_samplesize", default = 50, type = int, help="number of test samples")
     parser.add_argument("--hidden", dest="hiddensize", default = 0, type = int, help = "Size of hidden layer")
     parser.add_argument("--nonlin", dest ="nonlinearity", default = " ", type = str, help = "Set one of two nonlinearities ReLU or Tanh")
-    # Add options here for part 3 -- hidden layer and nonlinearity,
-    # and any other options you may think you want/need.  Document
-    # everything.
     
     args = parser.parse_args()
 
@@ -138,6 +128,5 @@ if __name__ == "__main__":
     ffnn.train(train, args.hiddensize, args.nonlinearity, args.samplesize)
     ffnn.test(test, args.test_samplesize)
 
-    # implement everything you need here
     
 
